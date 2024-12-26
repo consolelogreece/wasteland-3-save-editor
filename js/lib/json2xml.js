@@ -43,4 +43,3 @@ function json2xml(o, tab) {
        xml += toXml(o[m], m, "");
     return tab ? xml.replace(/\t/g, tab) : xml.replace(/\t|\n/g, "");
  }
- 

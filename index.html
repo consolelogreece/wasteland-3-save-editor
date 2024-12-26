@@ -7,19 +7,29 @@
     <script src="./js/lib/lzf.js"></script>
     <script src="./js/lib/json2xml.js"></script>
     <script src="./js/lib/xml2json.js"></script>
-    <script src="./js/utils.js"></script>
+    <script src="./js/metaData.js"></script>
     <link href=" https://cdn.jsdelivr.net/npm/jsoneditor@10.1.2/dist/jsoneditor.min.css " rel="stylesheet">
     <link href= "style.css" rel="stylesheet">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>wasteland 3 save editor</title>
+    <title>Wasteland 3 Save Editor</title>
   </head>
   <body>
-    <label for="fileInput" class="custom-file-button">Choose Save</label>
-    <input type="file" id="fileInput" accept=".xml">
-    <button id="downloadButton" class="custom-file-button" type="button">Save/Download</button>
-    <div id="saveJson"></div>
+    <div id="mainContainer">
+      <div class="tabs">
+        <button class="tab-button" onclick="showTab(0)">Save Editor</button>
+        <button class="tab-button" onclick="showTab(1)">Skill/item/etc codes</button>
+      </div>
+      <div class="tab-content" id="tab-0">
+        <label for="fileInput" class="custom-file-button">Find Save</label>
+        <input type="file" id="fileInput" accept=".xml">
+        <button id="downloadButton" class="custom-file-button" type="button">Download</button>
+        <div id="saveJson"></div>
+      </div>
+      <div class="tab-content" id="tab-1">
+        <div id="dataJson"></div>
+      </div>
+    </div>
     <script src="./js/main.js"></script>
   </body>
 </html>
