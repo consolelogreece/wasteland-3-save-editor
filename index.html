@@ -17,16 +17,28 @@
   <body>
     <div id="mainContainer">
       <div class="tabs">
-        <button class="tab-button" onclick="showTab(0)">Save Editor</button>
-        <button class="tab-button" onclick="showTab(1)">Skill/item/etc codes</button>
+        <button class="tab-button" onclick="showTab(0)">Read me</button>
+        <button class="tab-button" onclick="showTab(1)">Save Editor</button>
+        <button class="tab-button" onclick="showTab(2)">Codes</button>
       </div>
       <div class="tab-content" id="tab-0">
+        <p style="background-color: #222; color: white;padding:10px;font-family: helvetica;">
+          This is a very simple editor that just decompresses the save displays it for you to modify and then recompress/download it once finished. If enough people want it, I may consider updating it with a nice user friendly UI so you don't have to directly modify the save.
+          <br/><br/>
+          To use this save editor, go to the "Save Editor" tab, click "Find Save" and select your save. On Windows, your save is probably located in "Documents/My Games/Wasteland3/Save Games".
+          <br/><br/>
+          The "Codes" tab contains all item/outfit/etc codes (courtesy of <a href="https://fearlessrevolution.com/viewtopic.php?t=13511&start=240">Mwitwa</a>) as well as skill code mappings that you can use to give yourself items and whatnot. If you want to add a new item for example, you can duplicate one you already have by clicking the square icon to the left and clicking duplicate, then change the templateName field to the name of an item code on the codes tab. Make sure to change the uid field too (e.g if the uid was "87e0f53b-6067-4fc6-a29b-a51f8c664991", change it to "87e0f53b-6067-4fc6-a29b-a51f8c664992" on the duplicated item.)
+          <br/><br/>
+          Note: The size of the modified save is often smaller because this tool converts between XML and JSON which ultimately rearranges some of the XML nodes. This shouldn't affect your save but does make compression more effective.
+        </p>
+      </div>
+      <div class="tab-content" id="tab-1">
         <label for="fileInput" class="custom-file-button">Find Save</label>
         <input type="file" id="fileInput" accept=".xml">
         <button id="downloadButton" class="custom-file-button" type="button">Download</button>
         <div id="saveJson"></div>
       </div>
-      <div class="tab-content" id="tab-1">
+      <div class="tab-content" id="tab-2">
         <div id="dataJson"></div>
       </div>
     </div>
