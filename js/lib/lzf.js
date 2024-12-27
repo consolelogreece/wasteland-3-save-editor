@@ -1,4 +1,13 @@
+/**
+ * LZF compression/decompression module. Ported from the C
+ * implementation of liblzf, specfically lzf_c.c and lzf_d.c
+ * @license BSD-2-Clause
+ */
+
+// Copied from: https://github.com/McSimp/lzfjs/blob/master/lzf.js
+
 "use strict";
+
 function decompress(data) {
     var input = new Uint8Array(data);
     var output = [];

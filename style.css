@@ -121,3 +121,18 @@ div.jsoneditor-value.jsoneditor-null {
 div.jsoneditor-value.jsoneditor-invalid {
     color: white;
 }
+.dark-mode-anchor {
+    color: #acacac;
+    text-decoration: none;
+    transition: color 0.3s ease, background-color 0.1s ease;/
+}
+.dark-mode-anchor:hover,
+.dark-mode-anchor:focus {
+    color: #3498DB;
+    background-color: #2E3B4E;
+    border-radius: 4px;
+}
+.dark-mode-anchor:active {
+    color: #1E90FF;
+    background-color: #34495E;
+}

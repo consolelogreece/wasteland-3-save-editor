@@ -24,8 +24,8 @@ var metaData = {
         "Armor Modding": "560"
   },
   "Outfits": [
-    "AbigailMarkham_Female_Chest",
-    "AbigailMarkham_Female_Feet",
+        "AbigailMarkham_Female_Chest",
+        "AbigailMarkham_Female_Feet",
         "AbigailMarkham_Female_Head",
         "AbigailMarkham_Female_Legs",
         "AngelaDeth_Convo_Eyes",
