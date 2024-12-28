@@ -16,18 +16,19 @@
   </head>
   <body>
     <div id="mainContainer">
+      <h2>Wasteland 3 Save Editor</h2>
       <div class="tabs">
         <button class="tab-button" onclick="showTab(0)">Read me</button>
         <button class="tab-button" onclick="showTab(1)">Save Editor</button>
         <button class="tab-button" onclick="showTab(2)">Codes</button>
       </div>
       <div class="tab-content" id="tab-0">
-        <p style="background-color: #222; color: #eee;padding:10px;font-family: helvetica;">
-          This simple save editor decompresses, displays, and allows you to modify your save, then recompresses it for download. If there's enough demand, I may add a more user-friendly UI.
+        <p style="padding:10px;">
+          This simple save editor decompresses and displays your save for modification, then recompresses/downloads it when you're done. If there's enough demand, I may add a more user-friendly UI.
           <br/><br/>
-          To use it, go to the "Save Editor" tab, click "Find Save" to select your save file (usually found in Documents/My Games/Wasteland3/Save Games on Windows), then click "Download" when you're done.         
+          To use it, go to the "Save Editor" tab, click "Find Save" to select your save file (usually found in Documents/My Games/Wasteland3/Save Games on Windows). Click "Download" when you're done and drag the newly downloaded save over the top of the existing save.       
           <br/><br/>
-          The "Codes" tab provides item, outfit etc codes (thanks to <a class="dark-mode-anchor" href="https://fearlessrevolution.com/viewtopic.php?t=13511&start=240">Mwitwa</a>), and skill codes, that you can use to add items/change skill levels. To add a new item, you can modify an existing item or duplicate one by clicking the square icon to the left and clicking duplicate, then update the templateName field with the item code from the "Codes" tab. If you duplicated an item, be sure to change the uid field as well (e.g., from "87e0f53b-6067-4fc6-a29b-a51f8c664991" to "87e0f53b-6067-4fc6-a29b-a51f8c664992").
+          The "Codes" tab provides item/outfit/etc codes (thanks to <a class="dark-mode-anchor" href="https://fearlessrevolution.com/viewtopic.php?t=13511&start=240">Mwitwa</a>), and skill codes, that you can use to add items/change skill levels. To add a new item, you can modify an existing item or duplicate one by clicking the square icon to the left and clicking duplicate, then update the templateName field with the item code from the "Codes" tab. If you duplicated an item, be sure to change the uid field as well.
           <br/><br/>
           Note: Modified saves may be smaller due to conversion between XML and JSON, which rearranges XML nodes. This shouldn't affect your save but improves compression, hence the filesize difference.
         </p>

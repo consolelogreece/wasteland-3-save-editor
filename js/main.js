@@ -18,14 +18,15 @@ document.getElementById('fileInput').addEventListener('change', function(event) 
 });
 
 document.getElementById('downloadButton').addEventListener('click', function(e) {
+  if (!originalFile) return alert('You must "Find Save" first.')
   DownloadSaveCompressedXML(saveEditorElement.get(), originalFile);
 });
 
 function LoadSaveJsonFromCompressedXML(filecontent)
 {
   const matched = headerRgx.exec(filecontent);
+  if (!matched || !datasizeRgx.exec(matched[0])) return alert('Invalid save file.');
   saveHeader = matched[0];
-  if (!matched || !datasizeRgx.exec(matched[0])) return console.error('No/invalid save header found');
   const saveData = filecontent.slice(matched[0].length, filecontent.length);
   var parser = new DOMParser();
   var dec = new TextDecoder();

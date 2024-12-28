@@ -1,5 +1,5 @@
 var metaData = {
-    "skills": {
+    "Skills": {
         "Automatic Weapons": "10",
         "Melee Weapons": "20",
         "Big Guns": "30",
@@ -4026,7 +4026,7 @@ var metaData = {
         "ABL_WeirdScience_StimArmor",
         "ABL_Wolverine_PoisonSpine"
     ],
-    "StatusEffects": [
+    "Status Effects": [
         "EFF_Ability_ArmorDamage",
         "EFF_Ability_BloodFrenzy",
         "EFF_Ability_Bloodlust",
@@ -4518,7 +4518,7 @@ var metaData = {
         "EFF_Zoltar_MagicFingers",
         "EFF_Zoltar_WisdomOfZoltar"
     ],
-    "QuirksPerksBackgrounds": [
+    "Quirks Perks and Backgrounds": [
         "BCK_Academic",
         "BCK_Bookworm",
         "BCK_Bouncer",

@@ -1,5 +1,7 @@
 body {
-    background-color: #444;
+    background-color: #222;
+    font-family: Roboto;
+    color: #eee;
 }
 input[type="file"] {
     display: none;
@@ -13,7 +15,6 @@ input[type="file"] {
     font-size: 14px;
     display: inline-block;
     border-radius: 4px;
-    font-family: helvetica;
 }
 .custom-file-button:hover {
     background-color: #333;
@@ -40,12 +41,12 @@ input[type="file"] {
     border-color: #4CAF50;
 }
 .tab-button:hover {
-    background-color: #ddd;
+    background-color: #333;;
 }
 .tab-content {
     display: none;
     padding: 20px;
-    border: 1px solid #ccc;
+    border: 1px solid #444;
     border-top: none;
     margin-top: -1px;
 }
