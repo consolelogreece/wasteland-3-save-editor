@@ -137,3 +137,29 @@ div.jsoneditor-value.jsoneditor-invalid {
     color: #1E90FF;
     background-color: #34495E;
 }
+.github {
+    height: 40px;
+    width: 40px;
+    fill: white;
+    text-align: center;
+    margin: 10px;
+}
+.github:hover {
+    fill: #ccc;
+}
+
+#header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  #header h2 {
+    margin: 0; /* Remove any default margin for better control */
+  }
+  
+  #header div {
+    display: flex;
+    align-items: center; /* Align the icon vertically in the center */
+  }
+  

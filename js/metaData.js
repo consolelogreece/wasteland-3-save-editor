@@ -21,7 +21,8 @@ var metaData = {
         "Hard Ass": "400",
         "Kiss Ass": "410",
         "Sneaky Shit": "550",
-        "Armor Modding": "560"
+        "Armor Modding": "560",
+        "Combat Shooting": "570"
   },
   "Outfits": [
         "AbigailMarkham_Female_Chest",
