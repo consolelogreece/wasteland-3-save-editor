@@ -74,5 +74,3 @@ function showTab(tabIndex) {
 
 new JSONEditor(document.getElementById("dataJson"), {limitDragging: true}, metaData);
 showTab(0);
-
-console.log()
