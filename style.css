@@ -147,19 +147,15 @@ div.jsoneditor-value.jsoneditor-invalid {
 .github:hover {
     fill: #ccc;
 }
-
 #header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-  }
-  
-  #header h2 {
-    margin: 0; /* Remove any default margin for better control */
-  }
-  
-  #header div {
+}
+#header h2 {
+    margin: 0;
+}
+#header div {
     display: flex;
-    align-items: center; /* Align the icon vertically in the center */
-  }
-  
+    align-items: center;
+}
