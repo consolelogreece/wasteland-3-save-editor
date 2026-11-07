@@ -254,7 +254,7 @@ const Main = (() => {
       box.replaceChildren(
         el("div.platforms", { role: "tablist" }, SAVE_PATHS.map(platformButton)),
         el("div.path-box", el("code", p.path), el("button.btn.small", { type: "button", onclick: () => copyText(p.path) }, "Copy")),
-        el("p.muted", p.help + " Each save is a folder; open the .xml file inside it. If it isn't there, search for a folder called Wasteland3."));
+        el("p.muted", p.help + " If the folder isn't there, search your computer for one called Wasteland3."));
     };
     draw();
   }
@@ -279,6 +279,12 @@ const Main = (() => {
     e.preventDefault();
     if (document.querySelector(".overlay")) return;
     document.body.classList.remove("dragging");
+    const item = e.dataTransfer.items && e.dataTransfer.items[0];
+    const entry = item && item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+    if (entry && entry.isDirectory) {
+      banner(`That's a folder. Open "${entry.name}" and drag the .xml file inside it instead.`);
+      return;
+    }
     loadFile(e.dataTransfer.files[0]);
   });
   addEventListener("beforeunload", e => { if (hasUnsaved()) { e.preventDefault(); e.returnValue = ""; } });

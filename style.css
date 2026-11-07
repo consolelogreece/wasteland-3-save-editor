@@ -393,6 +393,8 @@ label.check-row input[type=checkbox], .outfit-set input[type=checkbox] { width: 
 .caution { margin: 0 0 12px; padding: 10px 12px; border: 1px solid #6b5520; border-left: 4px solid var(--warn); border-radius: 6px; background: #2a2414; color: #f0d9a0; font-size: 13.5px; line-height: 1.45; }
 .caution strong { color: #ffe3a3; }
 .caution strong::before { content: "\26A0\FE0E  "; }
+.open-steps { text-align: left; margin: 0 auto 10px; padding-left: 22px; max-width: 520px; }
+.open-steps li { margin-bottom: 4px; }
 .drop-inner .caution { text-align: left; margin: 0 0 14px; }
 .site-footer { text-align: center; color: var(--muted); font-size: 12px; padding: 18px 16px 28px; }
 .site-footer a { color: var(--muted); }

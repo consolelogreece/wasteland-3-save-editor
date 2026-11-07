@@ -175,6 +175,17 @@ export function endToEnd({ savePath }) {
     equal(await page.inputValue("#viewSelect"), "simple", "view picker follows");
   });
 
+  test("asks for the .xml file when a folder is dropped", async page => {
+    await page.evaluate(() => {
+      const folder = { isDirectory: true, name: "Quicksave1" };
+      const e = new Event("drop", { cancelable: true });
+      Object.defineProperty(e, "dataTransfer", { value: { items: [{ webkitGetAsEntry: () => folder }], files: [] } });
+      dispatchEvent(e);
+    });
+    await page.waitForSelector("#banner:not([hidden])");
+    check(/drag the .xml file inside it/.test(await page.textContent("#banner")), "explains what to drop");
+  });
+
   test("shows a readable location name", async page => {
     await openFixture(page);
     equal(await page.textContent(".overview .stat strong"), "Ranger HQ", "location");
