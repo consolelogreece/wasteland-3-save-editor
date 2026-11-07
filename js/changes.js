@@ -132,10 +132,11 @@ const Changes = (() => {
     const wrap = el("div");
     const draw = max => {
       const more = changes.length - max;
+      const showRest = el("p", el("button.btn.small", { type: "button", onclick: () => draw(Infinity) }, `Show the other ${more}`));
       wrap.replaceChildren(
         el("p", `${plural(changes.length)} since ${since === "download" ? "your last download" : "you opened " + App.file.name}:`),
         el("div.change-list", grouped(changes.slice(0, max), (name, items) => el("div.change-group", el("h4", name), items.map(c => changeLine(c))))),
-        more > 0 ? el("p", el("button.btn.small", { type: "button", onclick: () => draw(Infinity) }, `Show the other ${more}`)) : null);
+        ...(more > 0 ? [showRest] : []));
     };
     draw(400);
     return wrap;

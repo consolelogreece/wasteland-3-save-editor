@@ -202,6 +202,7 @@ export function endToEnd({ savePath }) {
     const out = await download(page);
     equal(value(out.xml, "money"), "123456", "money");
     check(out.review.includes("5657") && out.review.includes("123456"), "review shows old and new values");
+    check(!/\bnull\b/.test(out.review), "no stray null in the review");
   });
 
   test("undo and redo with buttons and keyboard", async page => {
