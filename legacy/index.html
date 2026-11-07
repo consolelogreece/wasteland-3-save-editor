@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src=" https://cdn.jsdelivr.net/npm/jsoneditor@10.1.2/dist/jsoneditor.min.js "></script>
+    <script src=" https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js "></script>
+    <script src=" https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js "></script>
+    <script src="./js/lib/lzf.js"></script>
+    <script src="./js/lib/json2xml.js"></script>
+    <script src="./js/lib/xml2json.js"></script>
+    <script src="./js/metaData.js"></script>
+    <link href=" https://cdn.jsdelivr.net/npm/jsoneditor@10.1.2/dist/jsoneditor.min.css " rel="stylesheet">
+    <link href= "style.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wasteland 3 Save Editor</title>
+  </head>
+  <body>
+    <div id="mainContainer">
+      <div id="header">
+        <h2>Wasteland 3 Save Editor <small>(old version · <a class="dark-mode-anchor" href="../index.html">new version</a>)</small></h2>
+        <div>
+          <a href="https://github.com/consolelogreece/wasteland-3-save-editor/" target="_blank" title="GitHub">
+            <svg class="github" viewBox="0 0 16 16">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+            </svg>
+          </a>
+        </div>
+     </div>
+      <div class="tabs">
+        <button class="tab-button" onclick="showTab(0)">Read me</button>
+        <button class="tab-button" onclick="showTab(1)">Save Editor</button>
+        <button class="tab-button" onclick="showTab(2)">Codes</button>
+      </div>
+      <div class="tab-content" id="tab-0">
+        <p style="padding:10px;">
+          This simple save editor decompresses and displays your save for modification, then recompresses/downloads it when you're done. I may add a more user-friendly UI in future if I can be bothered.
+          <br/><br/>
+          To use it, go to the "Save Editor" tab, click "Find Save" to select your save file (usually found in Documents/My Games/Wasteland3/Save Games on Windows). Click "Download" when you're done. This will download a zip containing a backup of the original save and the modified version. Drag the modified save over the top of the existing save.       
+          <br/><br/>
+          The "Codes" tab provides item/outfit/etc codes (thanks to <a class="dark-mode-anchor" href="https://fearlessrevolution.com/viewtopic.php?t=13511&start=240">Mwitwa</a>), and skill codes, that you can use to add items/change skill levels. To add a new item, you can modify an existing item or duplicate one by clicking the square icon to the left and clicking duplicate, then update the templateName field with the item code from the "Codes" tab. If you duplicated an item, be sure to change the uid field as well.
+          <br/><br/>
+          Note: Modified saves may be smaller due to conversion between XML and JSON, which can rearrange XML nodes. This shouldn't affect your save (no data is lost), but can improve compression resulting in a filesize difference.
+        </p>
+      </div>
+      <div class="tab-content" id="tab-1">
+        <label for="fileInput" class="custom-file-button">Find Save</label>
+        <input type="file" id="fileInput" accept=".xml">
+        <button id="downloadButton" class="custom-file-button" type="button">Download</button>
+        <div id="saveJson"></div>
+      </div>
+      <div class="tab-content" id="tab-2">
+        <div id="dataJson"></div>
+      </div>
+    </div>
+    <script src="./js/main.js"></script>
+  </body>
+</html>

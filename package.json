@@ -1,0 +1,11 @@
+{
+  "name": "wasteland-3-save-editor",
+  "private": true,
+  "description": "Browser-based save editor for Wasteland 3",
+  "scripts": {
+    "test": "node tests/run.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.45.0"
+  }
+}

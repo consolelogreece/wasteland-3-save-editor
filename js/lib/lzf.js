@@ -46,13 +46,7 @@ function decompress(data) {
             } while (--len);
         }
     } while (ip < input.length);
-    if (typeof Buffer !== 'undefined') {
-        return new Buffer(output);
-    } else {
-        var res = new Uint8Array(output.length);
-        res.set(output);
-        return res;
-    }
+    return Uint8Array.from(output);
 }
 function compress(data) {
     var HLOG = 16;
@@ -75,7 +69,7 @@ function compress(data) {
     var in_end = input.length, ip = 0, hval = FRST(input, ip);
     var op = 1, lit = 0;
     while (ip < in_end - 2) {
-        hval = NEXT(hval, data, ip);
+        hval = NEXT(hval, input, ip);
         var hslot = IDX(hval);
         var ref = htab[hslot];
         htab[hslot] = ip;
@@ -139,11 +133,5 @@ function compress(data) {
     if (lit != 0) {
         output[op - lit - 1] = (lit - 1) & 255;
     }
-    if (typeof Buffer !== 'undefined') {
-        return new Buffer(output);
-    } else {
-        var res = new Uint8Array(output.length);
-        res.set(output);
-        return res;
-    }
+    return Uint8Array.from(output);
 }

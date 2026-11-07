@@ -1,57 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <script src=" https://cdn.jsdelivr.net/npm/jsoneditor@10.1.2/dist/jsoneditor.min.js "></script>
-    <script src=" https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js "></script>
-    <script src=" https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js "></script>
-    <script src="./js/lib/lzf.js"></script>
-    <script src="./js/lib/json2xml.js"></script>
-    <script src="./js/lib/xml2json.js"></script>
-    <script src="./js/metaData.js"></script>
-    <link href=" https://cdn.jsdelivr.net/npm/jsoneditor@10.1.2/dist/jsoneditor.min.css " rel="stylesheet">
-    <link href= "style.css" rel="stylesheet">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wasteland 3 Save Editor</title>
-  </head>
-  <body>
-    <div id="mainContainer">
-      <div id="header">
-        <h2>Wasteland 3 Save Editor</h2>
-        <div>
-          <a href="https://github.com/consolelogreece/wasteland-3-save-editor/" target="_blank" title="GitHub">
-            <svg class="github" viewBox="0 0 16 16">
-                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
-            </svg>
-          </a>
-        </div>
-     </div>
-      <div class="tabs">
-        <button class="tab-button" onclick="showTab(0)">Read me</button>
-        <button class="tab-button" onclick="showTab(1)">Save Editor</button>
-        <button class="tab-button" onclick="showTab(2)">Codes</button>
-      </div>
-      <div class="tab-content" id="tab-0">
-        <p style="padding:10px;">
-          This simple save editor decompresses and displays your save for modification, then recompresses/downloads it when you're done. I may add a more user-friendly UI in future if I can be bothered.
-          <br/><br/>
-          To use it, go to the "Save Editor" tab, click "Find Save" to select your save file (usually found in Documents/My Games/Wasteland3/Save Games on Windows). Click "Download" when you're done. This will download a zip containing a backup of the original save and the modified version. Drag the modified save over the top of the existing save.       
-          <br/><br/>
-          The "Codes" tab provides item/outfit/etc codes (thanks to <a class="dark-mode-anchor" href="https://fearlessrevolution.com/viewtopic.php?t=13511&start=240">Mwitwa</a>), and skill codes, that you can use to add items/change skill levels. To add a new item, you can modify an existing item or duplicate one by clicking the square icon to the left and clicking duplicate, then update the templateName field with the item code from the "Codes" tab. If you duplicated an item, be sure to change the uid field as well.
-          <br/><br/>
-          Note: Modified saves may be smaller due to conversion between XML and JSON, which can rearrange XML nodes. This shouldn't affect your save (no data is lost), but can improve compression resulting in a filesize difference.
-        </p>
-      </div>
-      <div class="tab-content" id="tab-1">
-        <label for="fileInput" class="custom-file-button">Find Save</label>
-        <input type="file" id="fileInput" accept=".xml">
-        <button id="downloadButton" class="custom-file-button" type="button">Download</button>
-        <div id="saveJson"></div>
-      </div>
-      <div class="tab-content" id="tab-2">
-        <div id="dataJson"></div>
-      </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wasteland 3 Save Editor</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header id="topbar">
+    <h1>Wasteland 3 Save Editor</h1>
+    <div id="fileInfo" hidden>
+      <span id="fileName"></span>
+      <button id="changeBadge" type="button" title="See what you've changed" hidden></button>
     </div>
-    <script src="./js/main.js"></script>
-  </body>
+    <div class="spacer"></div>
+    <button class="btn" id="searchBtn" type="button" title="Search (Ctrl+K)">Search <kbd>Ctrl K</kbd></button>
+    <div class="split" id="historyGroup" hidden>
+      <button class="btn" id="undoBtn" type="button" title="Undo (Ctrl+Z)" disabled>Undo</button>
+      <button class="btn" id="redoBtn" type="button" title="Redo (Ctrl+Y)" disabled>Redo</button>
+    </div>
+    <button class="btn" id="openBtn" type="button">Open save…</button>
+    <input type="file" id="fileInput" accept=".xml" tabindex="-1" aria-hidden="true">
+    <div class="split" id="downloadGroup" hidden>
+      <button class="btn primary" id="downloadBtn" type="button">Download save</button>
+      <button class="btn" id="downloadZipBtn" type="button" title="Zip with the edited save and a backup of the original">+ backup (.zip)</button>
+    </div>
+    <a class="gh" href="https://github.com/consolelogreece/wasteland-3-save-editor/" target="_blank" rel="noopener" title="GitHub">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+  </header>
+
+  <div id="banner" role="alert" hidden></div>
+
+  <nav id="tabs" role="tablist">
+    <button role="tab" data-tab="edit">Edit</button>
+    <button role="tab" data-tab="codes">Codes</button>
+    <button role="tab" data-tab="compare">Compare</button>
+    <button role="tab" data-tab="help">Help</button>
+  </nav>
+
+  <div id="nextStep" class="next-step" role="status" hidden></div>
+
+  <main>
+    <section id="tab-edit" class="panel">
+      <section id="dropzone">
+        <div class="drop-inner">
+          <h2>Open a save</h2>
+          <div class="caution" role="note"><strong>Use at your own risk.</strong> This editor hasn't been thoroughly tested. Back up your save folder before you start.</div>
+          <p>Drag a save file here, or use <strong>Open save…</strong> above. Each save is a folder with a <code>.xml</code> file in it.</p>
+          <div class="save-paths" data-save-paths></div>
+          <p class="muted">The save is read in your browser and never uploaded anywhere.</p>
+        </div>
+      </section>
+      <div id="viewBar" class="view-bar" hidden>
+        <label for="viewSelect">View</label>
+        <select id="viewSelect">
+          <option value="simple">Editor</option>
+          <option value="tree">Tree</option>
+          <option value="raw">Raw XML</option>
+        </select>
+        <span class="muted">All three edit the same save. Changed values are highlighted in Tree and Raw XML.</span>
+      </div>
+      <section id="view-simple" hidden></section>
+      <section id="view-tree" hidden></section>
+      <section id="view-raw" hidden></section>
+    </section>
+    <section id="tab-compare" class="panel" hidden></section>
+    <section id="tab-codes" class="panel" hidden></section>
+    <section id="tab-help" class="panel prose" hidden>
+      <h2>How to use it</h2>
+      <ol>
+        <li><strong>Back up your save folder</strong> first.</li>
+        <li>Click <strong>Open save…</strong> and pick the <code>.xml</code> file inside the save's folder. See <a href="#where-saves">where saves are kept</a>.</li>
+        <li>Make your changes. <strong>Download save</strong> shows a list of everything you changed before it saves.</li>
+        <li>Copy the downloaded file over the original <code>.xml</code>, keeping the same name.</li>
+      </ol>
+      <h2>Views</h2>
+      <dl>
+        <dt>Editor</dt><dd>Forms for money, scrap, fame, your squad (stats, skills, perks, mutations, gear), the inventory, the Kodiak, collectibles, faction reputation and story flags.</dd>
+        <dt>Tree</dt><dd>Every value in the save. Search by name (e.g. <code>money</code>) or by value, click a value to edit it, ⧉ duplicates and ✕ deletes. Duplicated items get a new <code>uid</code>.</dd>
+        <dt>Raw XML</dt><dd>The save's XML in a text editor. Ctrl+F searches. Edits are checked when you switch away or download, and invalid XML is never applied.</dd>
+      </dl>
+      <h2>Other tabs</h2>
+      <dl>
+        <dt>Codes</dt><dd>Every item, outfit, perk, quirk, ability and status effect, with buttons to add them to your save. Names come from the game's own text. Pictures come from the community wiki.</dd>
+        <dt>Compare</dt><dd>See what changed between two saves and copy those changes into another.</dd>
+      </dl>
+      <h2>Shortcuts</h2>
+      <ul>
+        <li><kbd>Ctrl K</kbd> search everything</li>
+        <li><kbd>Ctrl Z</kbd> undo, <kbd>Ctrl Y</kbd> redo (outside text boxes)</li>
+      </ul>
+      <h2>FAQ</h2>
+      <dl class="faq">
+        <dt>Is it safe to use?</dt>
+        <dd>Your save never leaves your computer. It hasn't been thoroughly tested though, so keep a backup. The "+ backup (.zip)" download includes one.</dd>
+        <dt id="where-saves">Where are my saves?</dt>
+        <dd><div class="save-paths" data-save-paths></div></dd>
+        <dt>Can I edit console saves?</dt>
+        <dd>Only if you can get the save file onto a computer. The editor works with the PC save files on Windows, Mac and Linux.</dd>
+        <dt>The game won't load my edited save. What now?</dt>
+        <dd>Put the backup back and redo your changes a few at a time to find the one causing it. Values far above normal, like attributes over 10, are the usual suspects.</dd>
+        <dt>My change didn't show up in game.</dt>
+        <dd>Check you copied the downloaded file over the original <code>.xml</code> with exactly the same name, and that you loaded that save. If you use Steam Cloud, it may have put back an older copy.</dd>
+        <dt>Why is the downloaded file smaller?</dt>
+        <dd>The editor compresses the save a little better than the game does. The contents are the same.</dd>
+        <dt>Why do some items show a question mark?</dt>
+        <dd>Pictures only come from a wiki page with exactly the item's name, and many items don't have one.</dd>
+        <dt>Can I undo after downloading?</dt>
+        <dd>Undo works until you close the page. After that, use your backup.</dd>
+      </dl>
+      <h2>Good to know</h2>
+      <ul>
+        <li>Attributes and skills normally go up to 10. Higher may work but hasn't been tested.</li>
+        <li>Raising skills or adding perks here doesn't give what levelling them in game does, like crafting recipes. Give unspent points and spend them in game instead.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">Not thoroughly tested. Use at your own risk and keep a backup of your saves. · <a href="legacy/index.html">Old version</a></footer>
+
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/jump-to-line.min.js"></script>
+  <script src="js/lib/lzf.js"></script>
+  <script src="js/metaData.js"></script>
+  <script src="js/names.js"></script>
+  <script src="js/saveFile.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/widgets.js"></script>
+  <script src="js/changes.js"></script>
+  <script src="js/simple.js"></script>
+  <script src="js/tree.js"></script>
+  <script src="js/raw.js"></script>
+  <script src="js/codes.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/main.js"></script>
+</body>
 </html>

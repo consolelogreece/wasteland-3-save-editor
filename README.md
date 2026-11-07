@@ -1,3 +1,15 @@
-This is a very simple save editor I threw together for people (like me) who would rather not download dubious executables from the internet to modify their Wasteland 3 saves. It decompresses the save's XML, translates it to JSON, and displays it for modification, then retranslates/recompresses/downloads it when you're done. 
+# Wasteland 3 Save Editor
 
-Live version: https://consolelogreece.github.io/wasteland-3-save-editor/
+A save editor for Wasteland 3 that runs in the browser, for people (like me) who would rather not download dubious executables to modify their saves.
+
+https://consolelogreece.github.io/wasteland-3-save-editor/
+
+Use at your own risk and back up your saves first.
+
+## Tests
+
+```
+npm install
+npx playwright install chromium
+npm test
+```

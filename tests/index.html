@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unit tests</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 24px; background: #17181a; color: #e8e6e3; }
+    h1.pass { color: #6cc28a; } h1.fail { color: #ef6b5e; }
+    h2 { font-size: 15px; margin: 18px 0 4px; }
+    ul { list-style: none; padding-left: 8px; margin: 0; }
+    li.pass { color: #9a9ea5; } li.fail { color: #ef6b5e; }
+    pre { font-size: 12px; color: #9a9ea5; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div id="results">Running…</div>
+  <script>
+    // Any script that fails to load or throws while loading fails the run.
+    window.loadErrors = [];
+    addEventListener("error", e => window.loadErrors.push((e.filename || (e.target && e.target.src) || "") + ": " + (e.message || "failed to load")), true);
+  </script>
+  <div id="toast" hidden></div>
+  <div id="banner" hidden></div>
+
+  <script src="../js/lib/lzf.js"></script>
+  <script src="../js/metaData.js"></script>
+  <script src="../js/names.js"></script>
+  <script src="../js/saveFile.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/model.js"></script>
+  <script src="../js/history.js"></script>
+  <script src="../js/widgets.js"></script>
+  <script src="../js/changes.js"></script>
+
+  <script src="lib/harness.js"></script>
+  <script src="fixtures/sampleSave.js"></script>
+  <script src="unit/saveFile.test.js"></script>
+  <script src="unit/model.test.js"></script>
+  <script src="unit/diff.test.js"></script>
+  <script src="unit/history.test.js"></script>
+  <script src="unit/helpers.test.js"></script>
+  <script src="unit/codes.test.js"></script>
+  <script>
+    Harness.run().then(results => {
+      window.testResults = results;
+      Harness.report(results, document.getElementById("results"));
+    });
+  </script>
+</body>
+</html>

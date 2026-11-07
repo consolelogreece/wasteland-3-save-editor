@@ -1,76 +1,287 @@
-const headerRgx = /^((?:(?:XLZF|[A-Za-z]+:=.*?)\n)+)/;
-const datasizeRgx = /(\nDataSize:=)([0-9]+)\n/;
-const savedatasizeRgx = /(\nSaveDataSize:=)([0-9]+)\n/;
-var saveEditorElement;
-var originalFile;
-var saveHeader;
+// App shell: loading, tabs and views, undo/redo, downloading.
+"use strict";
 
-document.getElementById('fileInput').addEventListener('change', function(event) {
-  document.getElementById('saveJson').innerHTML = "";
-  originalFile = event.target.files[0];
-  if (originalFile) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      LoadSaveJsonFromCompressedXML(arrayBufferToString(e.target.result));
-    };
-    reader.readAsArrayBuffer(originalFile);
-  }
-});
+const Main = (() => {
+  const VIEW_KEY = "wl3-editor-view";
+  const views = { simple: SimpleEditor, tree: TreeView, raw: RawEditor };
+  const stale = { simple: true, tree: true, raw: true, compare: true };
+  let tab = null;
+  let view = "simple";
+  try { view = localStorage.getItem(VIEW_KEY) || "simple"; } catch {}
+  if (!views[view]) view = "simple";
 
-document.getElementById('downloadButton').addEventListener('click', function(e) {
-  if (!originalFile) return alert('You must "Find Save" first.')
-  DownloadSaveCompressedXML(saveEditorElement.get(), originalFile);
-});
+  const $ = id => document.getElementById(id);
 
-function LoadSaveJsonFromCompressedXML(filecontent)
-{
-  const matched = headerRgx.exec(filecontent);
-  if (!matched || !datasizeRgx.exec(matched[0])) return alert('Invalid save file.');
-  saveHeader = matched[0];
-  const saveData = filecontent.slice(matched[0].length, filecontent.length);
-  var parser = new DOMParser();
-  var dec = new TextDecoder();
-  xmlDoc = parser.parseFromString(dec.decode(decompress(stringToArrayBuffer(saveData))), "text/xml");
-  var saveJson = JSON.parse(xml2json(xmlDoc, ""));
-  saveEditorElement = new JSONEditor(document.getElementById("saveJson"), {limitDragging: true}, saveJson);
-  saveEditorElement.expand({path: ["save"], isExpand: true, recursive: false});
-}
-
-function DownloadSaveCompressedXML(saveJson, originalFile)
-{
-  var saveXml = json2xml(saveJson);
-  var enc = new TextEncoder();
-  var compressedXml = compress(enc.encode(saveXml));
-  saveHeader = saveHeader.replace(datasizeRgx, "\nDataSize:=" + saveXml.length + "\n").replace(savedatasizeRgx, "\nSaveDataSize:=" + compressedXml.byteLength + "\n");
-  var zip = new JSZip();
-  zip.file(originalFile.name, new Blob([new Blob([saveHeader], { type: 'text/plain' }), new Blob([compressedXml], { type: "application/octet-stream" })]));
-  zip.file("Backup of " + originalFile.name, new Blob([originalFile]));
-  zip.generateAsync({ type: "blob" }).then(function(content) {
-    saveAs(content, originalFile.name + ".zip");
+  App.onChange(src => {
+    for (const k in stale) if (k !== src) stale[k] = true;
+    if (tab === "edit" && (src !== view || src === "history")) renderView();
   });
-}
 
-function stringToArrayBuffer(binaryString) {
-  const length = binaryString.length;
-  const buffer = new ArrayBuffer(length);
-  const view = new Uint8Array(buffer);
-  for (let i = 0; i < length; i++) view[i] = binaryString.charCodeAt(i);
-  return buffer;
-}
+  // Tabs
+  function leaveRaw() {
+    if (tab === "edit" && view === "raw" && !RawEditor.apply()) {
+      banner('Your raw XML edits have an error. Fix them or click "Discard edits" first.');
+      return false;
+    }
+    return true;
+  }
 
-function arrayBufferToString(buffer) {
-  var string = ""
-  var view = new Uint8Array(buffer)
-  for (let i = 0; i < buffer.byteLength; i++) string += String.fromCharCode(view[i]);
-  return string;
-}
+  function showTab(name) {
+    if (name !== tab && !leaveRaw()) return;
+    banner(null);
+    tab = name;
+    for (const b of document.querySelectorAll("#tabs [data-tab]")) {
+      b.classList.toggle("active", b.dataset.tab === name);
+      b.setAttribute("aria-selected", String(b.dataset.tab === name));
+    }
+    for (const k of ["edit", "compare", "codes", "help"]) $("tab-" + k).hidden = k !== name;
+    if (name === "edit") renderView();
+    if (name === "compare") { CompareView.render($("tab-compare")); stale.compare = false; }
+    if (name === "codes") CodesView.render($("tab-codes"));
+  }
 
-function showTab(tabIndex) {
-  const tabs = document.querySelectorAll('.tab-content');
-  tabs.forEach(tab => tab.classList.remove('active'));
-  const selectedTab = document.getElementById('tab-' + tabIndex);
-  selectedTab.classList.add('active');
-}
+  function setView(v) {
+    if (v === view) return;
+    if (!leaveRaw()) { $("viewSelect").value = view; return; }
+    view = v;
+    try { localStorage.setItem(VIEW_KEY, v); } catch {}
+    renderView();
+  }
 
-new JSONEditor(document.getElementById("dataJson"), {limitDragging: true}, metaData);
-showTab(0);
+  function renderView() {
+    $("viewSelect").value = view;
+    $("dropzone").hidden = !!App.save;
+    $("viewBar").hidden = !App.save;
+    for (const k of Object.keys(views)) $("view-" + k).hidden = !App.save || k !== view;
+    if (!App.save) return;
+    if (stale[view]) { views[view].render($("view-" + view)); stale[view] = false; }
+    else if (view === "raw") RawEditor.render();
+  }
+
+  function inEditor(go) {
+    if (tab !== "edit") showTab("edit");
+    if (view !== "simple") setView("simple");
+    go();
+    stale.simple = false;
+  }
+  const goEditor = target => inEditor(() => SimpleEditor.goto(target));
+  const goCollectible = code => inEditor(() => SimpleEditor.showCollectible(code));
+
+  // Loading
+  async function loadFile(file) {
+    if (!file) return;
+    if (hasUnsaved() && !window.confirm("You have changes you haven't downloaded. Open a different save anyway?")) return;
+    banner(null);
+    try {
+      const buffer = await file.arrayBuffer();
+      const save = SaveFile.read(buffer);
+      // Kept for the backup in the zip: the file on disk may have been
+      // replaced by then (often with the edited save itself).
+      save.fileBytes = new Uint8Array(buffer);
+      App.save = save;
+      App.file = file;
+      App.dirty = false;
+      $("nextStep").hidden = true;
+      SimpleEditor.reset();
+      RawEditor.reset();
+      CompareView.reset();
+      Changes.reset();
+      History.attach(save.doc);
+      for (const k in stale) stale[k] = true;
+      $("fileName").textContent = file.name;
+      $("fileInfo").hidden = false;
+      $("downloadGroup").hidden = false;
+      $("historyGroup").hidden = false;
+      updateCount();
+      showTab("edit");
+      renderView();
+      toast("Opened " + file.name);
+    } catch (e) {
+      console.error(e);
+      banner(e.message || String(e));
+    }
+  }
+
+  // Downloading
+  function build() {
+    if (!leaveRaw()) return null;
+    try {
+      return SaveFile.write(App.save).bytes;
+    } catch (e) {
+      console.error(e);
+      banner("Couldn't build the save: " + e.message);
+      return null;
+    }
+  }
+
+  function download() {
+    const bytes = build();
+    if (!bytes) return;
+    saveBlob(new Blob([bytes], { type: "application/octet-stream" }), App.file.name);
+    markSaved(snapshot(), { zip: false });
+  }
+
+  async function downloadZip() {
+    const bytes = build();
+    if (!bytes) return;
+    if (!window.JSZip) return banner('The zip library didn\'t load. Use "Download save" instead.');
+    // Captured before the await: later edits, or another save opened in the
+    // meantime, mustn't be marked as downloaded.
+    const snap = snapshot(), save = App.save, file = App.file;
+    try {
+      const zip = new JSZip();
+      zip.file(file.name, bytes);
+      zip.file("backup/" + file.name, save.fileBytes);
+      saveBlob(await zip.generateAsync({ type: "blob" }), file.name.replace(/\.xml$/i, "") + ".zip");
+    } catch (e) {
+      console.error(e);
+      banner(`Couldn't make the zip (${e.message}). Use "Download save" instead.`);
+      return;
+    }
+    if (App.save !== save) { toast(`Downloaded ${file.name.replace(/\.xml$/i, "")}.zip`); return; }
+    markSaved(snap, { zip: true });
+  }
+
+  // App.dirty is only a hint; the diff decides, so undoing everything counts as clean.
+  function hasUnsaved() {
+    if (!App.save || !App.dirty) return false;
+    if (RawEditor.hasPending()) return true;
+    Changes.compute();
+    const since = Changes.countSinceDownload();
+    return (since === null ? Changes.count() : since) > 0;
+  }
+
+  function snapshot() { return { doc: App.save.doc.cloneNode(true), from: App.save.doc, revision: App.revision }; }
+
+  function startDownload(zip) {
+    if (!leaveRaw()) return;
+    Changes.review([
+      { label: zip ? "Download with backup (.zip)" : "Download save", primary: true, onClick: () => (zip ? downloadZip() : download()) },
+      { label: "Cancel", onClick: () => {} },
+    ]);
+  }
+
+  function markSaved(snap, { zip }) {
+    const upToDate = App.revision === snap.revision;
+    App.dirty = !upToDate;
+    Changes.markDownloaded(snap.doc, snap.from, upToDate);
+    showNextStep(zip);
+  }
+
+  function showNextStep(zip) {
+    const name = App.file.name;
+    const note = $("nextStep");
+    const message = zip
+      ? ["Downloaded. Unzip it and copy ", el("code", name), " (not the one in the backup folder) over the original in the save's folder, keeping the same name."]
+      : ["Downloaded. Copy ", el("code", name), " over the original in the save's folder, keeping the same name."];
+    const showSaveFolders = () => {
+      showTab("help");
+      $("where-saves").scrollIntoView({ block: "start" });
+    };
+    note.replaceChildren(
+      el("span", ...message),
+      el("button.link-btn", { type: "button", onclick: showSaveFolders }, "Where's that?"),
+      el("button.icon", { type: "button", title: "Close", "aria-label": "Close", onclick: () => { note.hidden = true; } }, "✕"));
+    note.hidden = false;
+  }
+
+  // Change count, undo/redo
+  function updateCount() {
+    const total = Changes.count();
+    const recent = Changes.countSinceDownload();
+    const badge = $("changeBadge");
+    const n = recent === null ? total : recent;
+    badge.hidden = !App.save || n === 0;
+    badge.textContent = (n === 1 ? "1 change" : `${n} changes`) + (recent === null ? "" : " since download");
+  }
+  Changes.onUpdate(updateCount);
+  History.onUpdate(({ canUndo, canRedo }) => { $("undoBtn").disabled = !canUndo; $("redoBtn").disabled = !canRedo; });
+
+  function inTextField(e) {
+    const t = e.target;
+    return t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.closest(".CodeMirror"));
+  }
+  addEventListener("keydown", e => {
+    if (!App.save || !(e.ctrlKey || e.metaKey) || inTextField(e)) return;
+    const k = e.key.toLowerCase();
+    if (k === "z" && !e.shiftKey) { e.preventDefault(); App.undo(); }
+    else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); App.redo(); }
+  });
+
+  // Applying raw edits after an undo would overwrite it, so ask first.
+  function guardedHistory(step, what) {
+    if (tab === "edit" && view === "raw" && RawEditor.hasPending()) {
+      modal("Unapplied raw XML edits", el("p", `Your raw XML edits haven't been applied. Apply or discard them before you ${what}.`), [
+        { label: "Keep editing", primary: true, onClick: () => {} },
+        { label: "Apply them", onClick: () => { if (RawEditor.apply()) toast("Applied your raw XML edits."); } },
+        { label: `Throw them away and ${what}`, onClick: () => { RawEditor.discard(); step(); } },
+      ]);
+      return false;
+    }
+    return step();
+  }
+  App.undo = () => guardedHistory(() => History.undo(), "undo");
+  App.redo = () => guardedHistory(() => History.redo(), "redo");
+
+  // Where saves are kept. Sources: inXile support and PCGamingWiki.
+  const SAVE_PATHS = [
+    { id: "windows", label: "Windows", path: "%USERPROFILE%\\Documents\\My Games\\Wasteland3\\Save Games\\",
+      help: "Paste it into the address bar of the file picker. If your Documents folder is in OneDrive, it'll be under OneDrive instead." },
+    { id: "mac", label: "Mac", path: "~/Library/Application Support/Wasteland3/Save Games/",
+      help: "In the file picker, press Cmd+Shift+G and paste it in." },
+    { id: "linux", label: "Linux / Steam Deck", path: "~/.config/Wasteland3/Save Games/",
+      help: "In most file pickers, press Ctrl+L and paste it in. If you've set XDG_CONFIG_HOME, it's under that instead of ~/.config." },
+    { id: "proton", label: "Windows version through Proton", path: "~/.steam/steam/steamapps/compatdata/719040/pfx/drive_c/users/steamuser/Documents/My Games/Wasteland3/Save Games/",
+      help: "Only if you've forced Steam to run the Windows version. The start of the path depends on where Steam is installed." },
+    { id: "gamepass", label: "Game Pass", path: "%LOCALAPPDATA%\\Packages\\DeepSilver.56575194F7E04_hmv7qcest37me\\SystemAppData\\wgs\\",
+      help: "Game Pass saves are stored differently and haven't been tried with this editor." },
+  ];
+  function guessPlatform() {
+    const ua = navigator.userAgent;
+    if (/Mac/.test(ua)) return "mac";
+    if (/Linux|X11|CrOS/.test(ua) && !/Android/.test(ua)) return "linux";
+    return "windows";
+  }
+  function renderSavePaths(box) {
+    let current = guessPlatform();
+    const platformButton = p => el("button", {
+      type: "button", role: "tab", class: p.id === current ? "active" : "", "aria-selected": String(p.id === current),
+      onclick: () => { current = p.id; draw(); },
+    }, p.label);
+    const draw = () => {
+      const p = SAVE_PATHS.find(x => x.id === current);
+      box.replaceChildren(
+        el("div.platforms", { role: "tablist" }, SAVE_PATHS.map(platformButton)),
+        el("div.path-box", el("code", p.path), el("button.btn.small", { type: "button", onclick: () => copyText(p.path) }, "Copy")),
+        el("p.muted", p.help + " Each save is a folder; open the .xml file inside it. If it isn't there, search for a folder called Wasteland3."));
+    };
+    draw();
+  }
+
+  // Wiring
+  const input = $("fileInput");
+  input.addEventListener("change", () => { loadFile(input.files[0]); input.value = ""; });
+  $("downloadBtn").addEventListener("click", () => startDownload(false));
+  $("downloadZipBtn").addEventListener("click", () => startDownload(true));
+  $("changeBadge").addEventListener("click", () => Changes.review([{ label: "Close", primary: true, onClick: () => {} }]));
+  $("undoBtn").addEventListener("click", () => App.undo());
+  $("redoBtn").addEventListener("click", () => App.redo());
+  $("searchBtn").addEventListener("click", () => QuickSearch.open());
+  $("openBtn").addEventListener("click", () => input.click());
+  $("viewSelect").addEventListener("change", e => setView(e.target.value));
+  for (const b of document.querySelectorAll("#tabs [data-tab]")) b.addEventListener("click", () => showTab(b.dataset.tab));
+  for (const box of document.querySelectorAll("[data-save-paths]")) renderSavePaths(box);
+
+  addEventListener("dragover", e => { e.preventDefault(); document.body.classList.add("dragging"); });
+  addEventListener("dragleave", e => { if (!e.relatedTarget) document.body.classList.remove("dragging"); });
+  addEventListener("drop", e => {
+    e.preventDefault();
+    document.body.classList.remove("dragging");
+    loadFile(e.dataTransfer.files[0]);
+  });
+  addEventListener("beforeunload", e => { if (hasUnsaved()) { e.preventDefault(); e.returnValue = ""; } });
+
+  showTab("edit");
+
+  return { showTab, goEditor, goCollectible, setView, leaveRaw };
+})();
