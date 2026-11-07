@@ -144,8 +144,9 @@ const Main = (() => {
 
   // App.dirty is only a hint; the diff decides, so undoing everything counts as clean.
   function hasUnsaved() {
-    if (!App.save || !App.dirty) return false;
+    if (!App.save) return false;
     if (RawEditor.hasPending()) return true;
+    if (!App.dirty) return false;
     Changes.compute();
     const since = Changes.countSinceDownload();
     return (since === null ? Changes.count() : since) > 0;
@@ -276,6 +277,7 @@ const Main = (() => {
   addEventListener("dragleave", e => { if (!e.relatedTarget) document.body.classList.remove("dragging"); });
   addEventListener("drop", e => {
     e.preventDefault();
+    if (document.querySelector(".overlay")) return;
     document.body.classList.remove("dragging");
     loadFile(e.dataTransfer.files[0]);
   });

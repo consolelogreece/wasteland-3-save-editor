@@ -70,4 +70,12 @@ describe("Undo and redo", () => {
     expect(App.save.doc).toBe(second);
     expect(money()).toBe("42");
   });
+
+  it("keeps edits the browser reported before the step was closed", async () => {
+    setText(App.save.doc.documentElement, "money", 1);
+    await new Promise(r => setTimeout(r));
+    App.changed("test");
+    expect(History.undo()).toBeTruthy();
+    expect(money()).toBe("5657");
+  });
 });

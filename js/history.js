@@ -8,7 +8,7 @@ const History = (() => {
   const LIMIT = 300;
   const SWAP_LIMIT = 20;   // each raw-editor swap keeps a whole copy of the save
   const MERGE_MS = 1500;
-  let observer = null, doc = null;
+  let observer = null, doc = null, delivered = [];
   let undoStack = [], redoStack = [];
   let applying = false, lastKey = null, lastTime = 0;
   const listeners = [];
@@ -18,12 +18,19 @@ const History = (() => {
     doc = newDoc;
     if (!keepStacks) { undoStack = []; redoStack = []; lastKey = null; }
     if (!doc) { notify(); return; }
-    observer = new MutationObserver(() => {});
+    delivered = [];
+    observer = new MutationObserver(records => delivered.push(...records));
     observer.observe(doc, { subtree: true, childList: true, characterData: true, characterDataOldValue: true, attributes: true, attributeOldValue: true });
     notify();
   }
 
-  function pending() { return observer ? observer.takeRecords() : []; }
+  // Records the browser already handed to the callback, then any still queued.
+  function pending() {
+    if (!observer) return [];
+    const records = delivered.concat(observer.takeRecords());
+    delivered = [];
+    return records;
+  }
 
   // Close the current step. Edits with the same key in quick succession (e.g.
   // typing into one field) merge into one step.

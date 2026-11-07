@@ -43,7 +43,7 @@ const Model = (() => {
   const INT_MAX = 2147483647, INT_MIN = -2147483648;
   function clampInt(n, min = INT_MIN, max = INT_MAX) {
     n = Math.trunc(Number(n));
-    if (!Number.isFinite(n)) n = min > 0 ? min : 0;
+    if (Number.isNaN(n)) n = min > 0 ? min : 0;
     return String(Math.min(max, Math.max(min, n)));
   }
 
@@ -59,7 +59,7 @@ const Model = (() => {
   function inventory(doc) { return ensure(rootOf(doc), "hostInventory"); }
   // Only these come in stacks. Gear, mods, keys and quest items are one per
   // item in real saves, even with several of the same thing.
-  const STACKABLE = /^(ITM_)?(DLC\d_)?(Consumable|CraftingComponent|Ammo|Junk|Scrap$)/;
+  const STACKABLE = /^(ITM_)?(DLC\d_)?(Crafting_)?(Consumable|CraftingComponent|Ammo|Junk|Scrap$)/;
   const isStackable = code => STACKABLE.test(code);
   const MAX_COPIES = 100;
 
@@ -79,11 +79,14 @@ const Model = (() => {
     return first;
   }
   // Turns a stack of something that doesn't stack into separate items.
+  // Up to MAX_COPIES at a time; anything beyond that stays on the original.
   function splitStack(item) {
-    const qty = Math.min(MAX_COPIES, parseInt(text(item, "quantity"), 10) || 1);
+    const qty = parseInt(text(item, "quantity"), 10) || 1;
+    const copies = Math.min(MAX_COPIES, qty);
     setText(item, "quantity", 1);
-    for (let i = 1; i < qty; i++) duplicateItem(item);
-    return qty;
+    for (let i = 1; i < copies; i++) duplicateItem(item);
+    setText(item, "quantity", qty - copies + 1);
+    return copies;
   }
   function duplicateItem(it) {
     const copy = it.cloneNode(true);
@@ -532,9 +535,13 @@ const Model = (() => {
   const KEY_FIELDS = ["uid", "k", "skillId", "perkname", "name", "filename", "uniqueId", "instanceId", "id", "templateName", "follower"];
   const isLeaf = n => !n.firstElementChild;
 
+  // Companions by their id; rangers by their creation key if they have one,
+  // otherwise by name.
   function pcIdentity(pc) {
     const cid = text(pc, "companionId");
     if (cid && cid !== "-1") return "companion " + cid;
+    const key = text(pc, "clientUniqueUGCKey");
+    if (key) return "ranger " + key;
     const name = text(pc, "displayName");
     return name ? "ranger " + name : "";
   }
@@ -631,7 +638,12 @@ const Model = (() => {
       const plan = new Map();
       for (const tag of new Set([...A.plan.keys(), ...B.plan.keys()])) {
         const pa = A.plan.get(tag), pb = B.plan.get(tag);
-        if (pa && pb && pa.by === pb.by && pa.field === pb.field) plan.set(tag, pa.unsafe || pb.unsafe ? { ...pa, unsafe: true } : pa);
+        // A list of plain values with one entry on one side and several on
+        // the other is still matched by value, not position.
+        const loneLeaf = P => P.groups.get(tag).length === 1 && isLeaf(P.groups.get(tag)[0]);
+        if (pa && pb && pa.by === "text" && pb.by === "index" && loneLeaf(B)) plan.set(tag, pa);
+        else if (pa && pb && pb.by === "text" && pa.by === "index" && loneLeaf(A)) plan.set(tag, pb);
+        else if (pa && pb && pa.by === pb.by && pa.field === pb.field) plan.set(tag, pa.unsafe || pb.unsafe ? { ...pa, unsafe: true } : pa);
         else if (pa && !pb) plan.set(tag, pa);
         else if (pb && !pa) plan.set(tag, pb);
         else plan.set(tag, { by: "index", unsafe: tag === "pc" });

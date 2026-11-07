@@ -99,8 +99,15 @@ const SimpleEditor = (() => {
   }
 
   function scrapField() {
-    const write = v => Model.setScrap(doc(), +v);
+    const write = v => {
+      Model.setScrap(doc(), +v);
+      if (view === "inventory") requestAnimationFrame(render);
+    };
     return field("Scrap", numberInput(String(Model.getScrap(doc())), write, { min: 0 }), "scrap");
+  }
+  function showScrapTotal() {
+    const box = root.querySelector('[data-focus="scrap"] input');
+    if (box && box !== document.activeElement) box.showValue(Model.getScrap(doc()));
   }
 
   // Layout
@@ -261,7 +268,11 @@ const SimpleEditor = (() => {
     return card("Basics",
       warning.box,
       el("div.grid",
-        numField("Level", pc, "level", { min: 1, after: warning.refresh }),
+        numField("Level", pc, "level", { min: 1, after: level => {
+          warning.refresh();
+          const listed = root.querySelector(".pc-list .active .muted");
+          if (listed) listed.textContent = "Level " + level;
+        } }),
         numField("XP", pc, "xp", { min: 0 }),
         numField("Hit points", pc, "hitpoints", { min: 1 }),
         numField("Unspent attribute points", pc, "availableAttributePoints", { min: 0, focus: "attrpoints" }),
@@ -614,7 +625,6 @@ const SimpleEditor = (() => {
     const unknown = metaData.Items.includes(code) ? "" : " (not a known code, so check it's right)";
     const capped = added < qty ? ` (${Model.MAX_COPIES} at most at a time, as it doesn't stack)` : "";
     toast(`Added ${added} × ${displayName(code)}${capped}${unknown}`, { undo: true });
-    if (view === "inventory" && root && root.isConnected && root.offsetParent) render();
   }
 
   function itemRows(items) {
@@ -626,8 +636,13 @@ const SimpleEditor = (() => {
       const duplicate = () => { Model.duplicateItem(item); done(); };
       const remove = () => { item.remove(); done("Deleted " + displayName(code)); };
       const qty = text(item, "quantity");
-      const split = () => done(`Split into ${Model.splitStack(item)} separate items`);
-      const quantity = Model.isStackable(code) ? numField("Qty", item, "quantity", { min: 1 })
+      const split = () => {
+        const made = Model.splitStack(item);
+        const left = parseInt(text(item, "quantity"), 10) - 1;
+        done(`Split into ${made} separate items` + (left > 0 ? `. ${left} more still to split` : ""));
+      };
+      const afterQty = code === "ITM_Scrap" ? showScrapTotal : undefined;
+      const quantity = Model.isStackable(code) ? numField("Qty", item, "quantity", { min: 1, after: afterQty })
         : qty === "1" ? el("span.field.muted", { title: "Doesn't stack. Each one is a separate item." }, "×1")
         : el("button.btn.small", { type: "button", title: "This doesn't stack in game, so only one would show.", onclick: split }, `Split ×${qty} into separate items`);
       return el("div.row",

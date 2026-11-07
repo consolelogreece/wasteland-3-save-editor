@@ -169,7 +169,7 @@ const Wiki = (() => {
   function pump() {
     while (active < MAX_PARALLEL && queue.length) {
       const job = queue.shift();
-      if (job.cancelled()) { job.reject(new Error("cancelled")); continue; }
+      if (job.waiting.every(gone => gone())) { job.reject(new Error("cancelled")); continue; }
       if (Date.now() < downUntil) { job.reject(new Error("wiki unavailable")); continue; }
       active++;
       request(job.q).then(res => {
@@ -183,14 +183,20 @@ const Wiki = (() => {
     }
   }
 
+  // A queued lookup is skipped only once nobody waiting for it is on screen.
   function lookup(name, cancelled = () => false) {
     const q = wikiQuery(name);
     if (q in saved) return Promise.resolve(saved[q]);
-    if (mem.has(q)) return mem.get(q);
-    const p = new Promise((resolve, reject) => { queue.push({ q, resolve, reject, cancelled }); pump(); });
-    mem.set(q, p);
-    p.catch(() => mem.delete(q));
-    return p;
+    if (mem.has(q)) {
+      const known = mem.get(q);
+      known.job.waiting.push(cancelled);
+      return known.promise;
+    }
+    const job = { q, waiting: [cancelled] };
+    const promise = new Promise((resolve, reject) => { Object.assign(job, { resolve, reject }); queue.push(job); pump(); });
+    mem.set(q, { job, promise });
+    promise.catch(() => mem.delete(q));
+    return promise;
   }
 
   function cached(name) { return saved[wikiQuery(name)] || null; }

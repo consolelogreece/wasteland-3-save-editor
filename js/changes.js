@@ -23,9 +23,16 @@ const Changes = (() => {
     observer.observe(doc, { subtree: true, childList: true, characterData: true, attributes: true });
   }
   let loadedDoc = null;
+  // The edited element and its ancestors. Added elements count as edited all
+  // the way down, since one can replace an element that had the same key.
   function addBranch(set, records) {
     for (const r of records) {
       for (let n = r.target.nodeType === 1 ? r.target : r.target.parentNode; n && n.nodeType === 1 && !set.has(n); n = n.parentNode) set.add(n);
+      for (const added of r.addedNodes) {
+        if (added.nodeType !== 1) continue;
+        set.add(added);
+        for (const inner of added.getElementsByTagName("*")) set.add(inner);
+      }
     }
   }
   function markTouched(doc, records) {
@@ -303,10 +310,10 @@ const CompareView = (() => {
 
     const conflictLine = ({ change, current }) => el("div.change",
       el("span.what", change.label),
-      el("span.vals", "before ", el("del", change.before), ", after ", el("ins", change.after), ", open save has ", el("strong", current)));
+      el("span.vals", "before ", el("del", change.before), ", after ", change.kind === "removed" ? "removed" : el("ins", change.after), ", open save has ", el("strong", current)));
     const failureLine = ({ change, reason }) => el("div.change", el("span.what", change.label), el("span.vals", reason));
     const body = el("div",
-      el("p", r.applied ? `Copied ${changes(r.applied)}. Undo puts them all back.` : "Nothing was copied."),
+      el("p", r.applied ? `Copied ${changes(r.applied)}. Undo puts them back.` : "Nothing was copied."),
       r.conflicts.length ? el("div",
         el("h4", `${changes(r.conflicts.length)} skipped because the open save has a different value now`),
         el("div.change-list", r.conflicts.map(conflictLine))) : null,
@@ -323,9 +330,10 @@ const CompareView = (() => {
 
   // A newly opened save replaces any slot that was taken from the previous one.
   function reset() {
+    const stale = (before && before.fromOpenSave) || (after && after.fromOpenSave);
     if (before && before.fromOpenSave) before = null;
     if (after && after.fromOpenSave) after = null;
-    result = null;
+    if (stale) result = null;
   }
 
   return { render, reset };

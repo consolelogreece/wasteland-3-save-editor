@@ -112,7 +112,7 @@ function codePicker({ entries, placeholder = "Search…", onPick, thumbs = false
       else highlight(Math.min(results.length - 1, active + 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      highlight(Math.max(0, active - 1));
+      if (!list.hidden) highlight(Math.max(0, active - 1));
     } else if (e.key === "Escape" && !list.hidden) {
       e.stopPropagation();
       close();
@@ -145,7 +145,14 @@ function modal(title, body, actions = []) {
     if (!document.querySelector(".overlay")) for (const n of behind) n.inert = false;
     refocus(prevFocus);
   };
-  const onKey = e => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
+  // Escape closes the top dialog only, and not while a picker list in it is open.
+  const onKey = e => {
+    if (e.key !== "Escape") return;
+    if ([...document.querySelectorAll(".overlay")].pop() !== overlay) return;
+    if (e.target.getAttribute && e.target.getAttribute("aria-expanded") === "true") return;
+    e.stopPropagation();
+    close();
+  };
   const actionButton = a => el("button.btn" + (a.primary ? ".primary" : ""), {
     type: "button", onclick: () => { if (a.onClick() !== false) close(); },
   }, a.label);

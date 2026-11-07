@@ -476,4 +476,23 @@ describe("Stacks", () => {
     expect(metaData.Items).toContain("AmmoRocket");
     expect(Model.isInventoryCode("AmmoRocket")).toBeTruthy();
   });
+
+  it("splits big stacks a hundred at a time without losing any", () => {
+    const doc = Fixtures.doc();
+    const code = "ITM_Equip_Armor_Helmet_Light_Tier2-1_Merc";
+    const item = Model.addInventoryItem(doc, code, 1);
+    setText(item, "quantity", 250);
+    expect(Model.splitStack(item)).toBe(Model.MAX_COPIES);
+    const total = count(doc, code).reduce((n, i) => n + +text(i, "quantity"), 0);
+    expect(total).toBe(250);
+  });
+
+  it("stacks crafted consumables", () => {
+    expect(Model.isStackable("ITM_Crafting_Consumable_Alcohol_SuperSqueezins")).toBeTruthy();
+  });
+
+  it("clamps infinite numbers to the limit", () => {
+    expect(Model.clampInt("1e999")).toBe(String(Model.INT_MAX));
+    expect(Model.clampInt(-Infinity, 0)).toBe("0");
+  });
 });

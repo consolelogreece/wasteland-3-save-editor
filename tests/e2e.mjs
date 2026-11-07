@@ -391,6 +391,18 @@ export function endToEnd({ savePath }) {
     await page.waitForFunction(() => Model.pcs(App.save.doc).map(p => Model.pcName(p)).join() === "Zoë & Co,Zoë & Co");
   });
 
+  test("counts a character imported over themselves as a change", async page => {
+    await openFixture(page);
+    await page.evaluate(() => {
+      const pc = Model.pcs(App.save.doc)[1];
+      const json = JSON.parse(Model.exportCharacter(pc));
+      json.xml = json.xml.replace(/<level>\d+<\/level>/, "<level>30</level>");
+      Model.importCharacter(App.save.doc, JSON.stringify(json), pc);
+      App.changed("test");
+    });
+    check(await changeCount(page) > 0, "the import shows up in the change count");
+  });
+
   test("survives several open, edit and download cycles", async page => {
     let bytes = await fixtureBytes(page);
     for (let i = 1; i <= 4; i++) {

@@ -229,4 +229,20 @@ describe("Copying changes between saves safely", () => {
     Model.applyChanges(target, Model.diff(a, b));
     expect(quantities(target)).toEqual(["u7=5", "u1=6"]);
   });
+
+  it("matches a renamed ranger by their creation key, not their name", () => {
+    const a = Fixtures.doc(), b = Fixtures.doc(), target = Fixtures.doc();
+    for (const d of [a, b, target]) setText(Model.pcs(d)[0], "clientUniqueUGCKey", "key-1");
+    setText(Model.pcs(b)[0], "displayName", "Renamed");
+    Model.applyChanges(target, Model.diff(a, b));
+    expect(Model.pcs(target).length).toBe(Model.pcs(a).length);
+    expect(text(Model.pcs(target)[0], "displayName")).toBe("Renamed");
+  });
+
+  it("matches a one-entry list of plain values by value", () => {
+    const abilities = (...codes) => skeleton("<ab>" + codes.map(c => `<ability>${c}</ability>`).join("") + "</ab>");
+    const a = Fixtures.doc(abilities("A")), b = Fixtures.doc(abilities("A", "B")), target = Fixtures.doc(abilities("A", "B"));
+    Model.applyChanges(target, Model.diff(a, b));
+    expect([...target.querySelectorAll("ab > ability")].map(n => n.textContent)).toEqual(["A", "B"]);
+  });
 });
