@@ -3,7 +3,7 @@
 	License: http://creativecommons.org/licenses/LGPL/2.1/
    Version: 0.9
 	Author:  Stefan Goessner/2006
-	Web:     http://goessner.net/ 
+	Web:     http://goessner.net/
 */
 function xml2json(xml, tab) {
     var X = {
@@ -152,4 +152,4 @@ function xml2json(xml, tab) {
        xml = xml.documentElement;
     var json = X.toJson(X.toObj(X.removeWhite(xml)), xml.nodeName, "\t");
     return "{\n" + tab + (tab ? json.replace(/\t/g, tab) : json.replace(/\t|\n/g, "")) + "\n}";
- } 
+ }

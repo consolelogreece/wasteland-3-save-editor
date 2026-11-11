@@ -18,7 +18,7 @@ function decompress(data) {
         if (ctrl < (1 << 5)) {
             ctrl++;
             if (ip + ctrl > input.length) {
-                throw new Error('Invalid input'); 
+                throw new Error('Invalid input');
             }
             while (ctrl--) {
                 output[op++] = input[ip++];

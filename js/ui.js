@@ -324,4 +324,3 @@ async function copyText(s) {
   try { await navigator.clipboard.writeText(s); toast("Copied " + s); }
   catch { toast("Couldn't copy; select the text manually"); }
 }
-

@@ -3,7 +3,7 @@
 	License: http://creativecommons.org/licenses/LGPL/2.1/
    Version: 0.9
 	Author:  Stefan Goessner/2006
-	Web:     http://goessner.net/ 
+	Web:     http://goessner.net/
 */
 function json2xml(o, tab) {
     var toXml = function(v, name, ind) {
